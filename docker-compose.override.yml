@@ -30,6 +30,22 @@ services:
       timeout: 5s
       retries: 5
 
+  orderdb:
+    container_name: orderdb
+    environment:
+      SA_PASSWORD: "Abdullah1234567"
+      ACCEPT_EULA: "Y"
+    restart: always
+    ports:
+      - "1433:1433"
+    volumes:
+      - orderdb-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Abdullah1234567' -Q 'select 1'"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+
   pgadmin:
     container_name: pgadmin
     environment:
@@ -72,12 +88,21 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - "DatabaseSettings__ConnectionString=Server=discountdb;Port=5432;Database=DiscountDb;User Id=admin;Password=Password@1;"
-      - "ElasticConfiguration__Uri=http://elasticsearch:9200" 
     depends_on:
        discountdb:
          condition: service_healthy
     ports:
       - "8002:8080"
+
+  ordering.api:
+    container_name: ordering.api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "ConnectionStrings__OrderingConnectionString=Server=orderdb;Database=OrderDb;User Id=sa;Password=Abdullah1234567;TrustServerCertificate=True" 
+    depends_on:
+     - orderdb                    
+    ports:
+     - "8003:8080"    
 
   portainer:
     container_name: portainer
@@ -88,5 +113,3 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
-
-
